@@ -3,9 +3,9 @@ FROM python:3.8
 WORKDIR /app
 COPY . /app
 
-RUN pip --no-cache-dir install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-EXPOSE 5000
+EXPOSE 80
 
 ENTRYPOINT ["python"]
 CMD ["app.py"]
