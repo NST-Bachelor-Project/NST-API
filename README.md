@@ -1,7 +1,7 @@
 # NST-API
 
 ## BUILD
-sudo docker build -t flaskdemo .
+docker build -t nst .
 
 ## RUN
-sudo docker run -it -p 80:5000 flaskdemo
+docker run -it -p 80:80 nst
