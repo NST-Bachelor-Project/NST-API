@@ -1,8 +1,10 @@
 from flask import Flask, request
+from flask_cors import CORS
 import base64
 from nst import *
 
 app = Flask(__name__)
+CORS(app)
 
 @app.route('/',  methods=['POST'])
 def NST_reqeust():
