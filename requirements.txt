@@ -1,2 +1,6 @@
+--find-links https://download.pytorch.org/whl/torch_stable.html
 Flask==1.1.2
 Flask-Cors==3.0.7
+torch==1.8.1+cu101
+torchvision==0.9.1+cpu
+Pillow==4.1.1
