@@ -14,10 +14,6 @@ import copy
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 imsize = 512 if torch.cuda.is_available() else 128  # use small size if no gpu
 
-loader = transforms.Compose([
-    transforms.Resize((imsize,imsize)),
-    transforms.ToTensor()])
-    
 cnn = models.vgg19(pretrained=True).features.to(device).eval()
 cnn_normalization_mean = torch.tensor([0.485, 0.456, 0.406]).to(device)
 cnn_normalization_std = torch.tensor([0.229, 0.224, 0.225]).to(device)
@@ -59,10 +55,18 @@ class NormalizationLayer(nn.Module):
     def forward(self, img):
         return (img - self.mean) / self.std
 
-def load_image(img):
-    image = loader(Image.open(BytesIO(img))).unsqueeze(0)
+def load_image(img, maxsize=None, shape=None):
+    image = Image.open(BytesIO(img))
+    if maxsize:
+        loader = transforms.Compose([
+            transforms.Resize(maxsize),
+            transforms.ToTensor()])
+    elif shape:
+        loader = transforms.Compose([
+            transforms.Resize(shape),
+            transforms.ToTensor()])
+    image = loader(image).unsqueeze(0)
     return image.to(device, torch.float)
-
 
 def get_style_model_and_losses(cnn, mean, std, style_img, content_img):
     content_layers = ['conv_4']
@@ -77,18 +81,13 @@ def get_style_model_and_losses(cnn, mean, std, style_img, content_img):
 
     model = nn.Sequential(normalization)
 
-    conv_ind = 0 
-    for layer in cnn.children():
+    conv_ind = 0
+    for name, layer in  cnn._modules.items():
         if isinstance(layer, nn.Conv2d):
             conv_ind += 1
             name = f'conv_{conv_ind}'
         elif isinstance(layer, nn.ReLU):
-            name = f'relu_{conv_ind}'
             layer = nn.ReLU(inplace=False)
-        elif isinstance(layer, nn.MaxPool2d):
-            name = f'pool_{conv_ind}'
-        elif isinstance(layer, nn.BatchNorm2d):
-            name = f'bn_{conv_ind}'
 
         model.add_module(name, layer)
 
@@ -103,21 +102,10 @@ def get_style_model_and_losses(cnn, mean, std, style_img, content_img):
             style_loss = StyleLoss(target_feature)
             model.add_module(f"style_loss_{conv_ind}", style_loss)
             style_losses.append(style_loss)
-
-    # for i in range(len(model) - 1, -1, -1):
-    #     if isinstance(model[i], ContentLoss) or isinstance(model[i], StyleLoss):
-    #         break
-    # print(i+1) #18
     
     model = model[:18]
 
     return model, style_losses, content_losses
-
-
-def get_input_optimizer(input_img):
-    optimizer = optim.LBFGS([input_img.requires_grad_()])
-    return optimizer
-
 
 def run_style_transfer(cnn, mean, std,content_img, style_img, input_img):
     print('Training...')
@@ -125,7 +113,7 @@ def run_style_transfer(cnn, mean, std,content_img, style_img, input_img):
     content_weight = 1
     num_steps = 300
     model, style_losses, content_losses = get_style_model_and_losses(cnn, mean, std, style_img, content_img)
-    optimizer = get_input_optimizer(input_img)
+    optimizer = optim.LBFGS([input_img.requires_grad_()])
     run = [0]
     while run[0] <= num_steps:
         def closure():
@@ -163,12 +151,12 @@ def run_style_transfer(cnn, mean, std,content_img, style_img, input_img):
 
     return input_img
 
-
 def NST(style_img, content_img):
     # return {"image":"success"}
-    style_img = load_image(style_img)
-    content_img = load_image(content_img)
+    content_img = load_image(content_img, maxsize=imsize)
+    style_img = load_image(style_img,shape=(content_img.size(2), content_img.size(3)))
     
+    print(style_img.size(), content_img.size())
     assert style_img.size() == content_img.size(), "we need to import style and content images of the same size"
     input_img = content_img.clone()
     image = run_style_transfer(cnn, cnn_normalization_mean, cnn_normalization_std, content_img, style_img, input_img)
@@ -183,5 +171,5 @@ def NST(style_img, content_img):
     img_str = base64.b64encode(buffered.getvalue())
         
     result = {}
-    result["image"] = 'data:image/jpg;base64,' + img_str.decode('utf-8')
+    result["image"] = 'data:image/jpeg;base64,' + img_str.decode('utf-8')
     return result
