@@ -1,12 +1,15 @@
 from flask import Flask, request
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
+
 import base64
 from nst import *
 
 app = Flask(__name__)
-CORS(app)
+cors = CORS(app)
+app.config['CORS_HEADERS'] = 'Content-Type'
 
 @app.route('/',  methods=['POST'])
+@cross_origin()
 def NST_reqeust():
     request_data = request.get_json(silent=True)
     style_img = base64.b64decode(str(request_data["style"]))
