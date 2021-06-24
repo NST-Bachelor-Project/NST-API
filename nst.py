@@ -14,6 +14,8 @@ import copy
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 imsize = 512 if torch.cuda.is_available() else 128  # use small size if no gpu
 
+print(f"deviceeeeeeeeeeeee    {device}")
+
 cnn = models.vgg19(pretrained=True).features.to(device).eval()
 cnn_normalization_mean = torch.tensor([0.485, 0.456, 0.406]).to(device)
 cnn_normalization_std = torch.tensor([0.229, 0.224, 0.225]).to(device)
