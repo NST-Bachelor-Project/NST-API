@@ -12,9 +12,9 @@ import torchvision.models as models
 import copy
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-imsize = 512 if torch.cuda.is_available() else 128  # use small size if no gpu
+imsize = 256 if torch.cuda.is_available() else 128
 
-print(f"deviceeeeeeeeeeeee    {device}")
+print(f"device ------------ {device}")
 
 cnn = models.vgg19(pretrained=True).features.to(device).eval()
 cnn_normalization_mean = torch.tensor([0.485, 0.456, 0.406]).to(device)
@@ -116,8 +116,8 @@ def run_style_transfer(cnn, mean, std,content_img, style_img, input_img):
     num_steps = 300
     model, style_losses, content_losses = get_style_model_and_losses(cnn, mean, std, style_img, content_img)
     optimizer = optim.LBFGS([input_img.requires_grad_()])
-    run = [0]
-    while run[0] <= num_steps:
+    iter = [0]
+    while iter[0] <= num_steps:
         def closure():
             input_img.data.clamp_(0, 1)
 
@@ -137,9 +137,9 @@ def run_style_transfer(cnn, mean, std,content_img, style_img, input_img):
             loss = style_score + content_score
             loss.backward()
     
-            run[0] += 1
-            if run[0] % 50 == 0:
-                print(f"Iter {run}:")
+            iter[0] += 1
+            if iter[0] % 50 == 0:
+                print(f"Iter {iter}:")
                 print('Style Loss : {:4f} Content Loss: {:4f}'.format(style_score.item(), content_score.item()))
                 print()
 
