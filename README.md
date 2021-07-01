@@ -4,4 +4,4 @@
 docker build -t nst .
 
 ## RUN
-docker run -it -p 80:80 nst
+docker run --gpus all -it -p 80:80 nst

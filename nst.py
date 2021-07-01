@@ -116,9 +116,10 @@ def run_style_transfer(cnn, mean, std,content_img, style_img, input_img):
     num_steps = 300
     model, style_losses, content_losses = get_style_model_and_losses(cnn, mean, std, style_img, content_img)
     optimizer = optim.LBFGS([input_img.requires_grad_()])
-    iter = [0]
-    while iter[0] <= num_steps:
+    iter = 0
+    while iter <= num_steps:
         def closure():
+            nonlocal iter
             input_img.data.clamp_(0, 1)
 
             optimizer.zero_grad()
@@ -136,9 +137,9 @@ def run_style_transfer(cnn, mean, std,content_img, style_img, input_img):
 
             loss = style_score + content_score
             loss.backward()
-    
-            iter[0] += 1
-            if iter[0] % 50 == 0:
+
+            iter += 1
+            if iter % 50 == 0:
                 print(f"Iter {iter}:")
                 print('Style Loss : {:4f} Content Loss: {:4f}'.format(style_score.item(), content_score.item()))
                 print()
