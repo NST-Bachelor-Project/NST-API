@@ -59,6 +59,7 @@ class NormalizationLayer(nn.Module):
 
 def load_image(img, maxsize=None, shape=None):
     image = Image.open(BytesIO(img))
+    image = image.convert('RGB')
     if maxsize:
         loader = transforms.Compose([
             transforms.Resize(maxsize),
