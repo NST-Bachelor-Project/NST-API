@@ -12,7 +12,7 @@ import torchvision.models as models
 import copy
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-imsize = 256 if torch.cuda.is_available() else 128
+imsize = 512 if torch.cuda.is_available() else 128
 
 print(f"device ------------ {device}")
 
