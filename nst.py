@@ -114,7 +114,7 @@ def run_style_transfer(cnn, mean, std,content_img, style_img, input_img):
     print('Training...')
     style_weight = 1000000
     content_weight = 1
-    num_steps = 300
+    num_steps = 500
     model, style_losses, content_losses = get_style_model_and_losses(cnn, mean, std, style_img, content_img)
     optimizer = optim.LBFGS([input_img.requires_grad_()])
     iter = 0
