@@ -11,8 +11,8 @@ import torchvision.models as models
 
 import copy
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-imsize = 512 if torch.cuda.is_available() else 128
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') # use cuda if it is available
+imsize = 512 if torch.cuda.is_available() else 128 # choose image size based on cuda availability
 
 print(f"device ------------ {device}")
 
@@ -21,7 +21,7 @@ cnn_normalization_mean = torch.tensor([0.485, 0.456, 0.406]).to(device)
 cnn_normalization_std = torch.tensor([0.229, 0.224, 0.225]).to(device)
 
 class ContentLoss(nn.Module):
-
+    '''content loss class'''
     def __init__(self, target,):
         super(ContentLoss, self).__init__()
         self.target = target.detach()
@@ -31,6 +31,7 @@ class ContentLoss(nn.Module):
         return input
 
 def gram_matrix(input):
+    # computes gram matrix
     a, b, c, d = input.size()
     features = input.view(a * b, c * d)
 
@@ -38,7 +39,7 @@ def gram_matrix(input):
     return G.div(a * b * c * d)
 
 class StyleLoss(nn.Module):
-
+    '''style loss class'''
     def __init__(self, target_feature):
         super(StyleLoss, self).__init__()
         self.target = gram_matrix(target_feature).detach()
@@ -49,6 +50,8 @@ class StyleLoss(nn.Module):
         return input
 
 class NormalizationLayer(nn.Module):
+    '''normalization  class'''
+
     def __init__(self, mean, std):
         super(NormalizationLayer, self).__init__()
         self.mean = torch.tensor(mean).view(-1, 1, 1)
@@ -58,6 +61,7 @@ class NormalizationLayer(nn.Module):
         return (img - self.mean) / self.std
 
 def load_image(img, maxsize=None, shape=None):
+    # load image with maxsize or fixed size
     image = Image.open(BytesIO(img))
     image = image.convert('RGB')
     if maxsize:
@@ -72,6 +76,7 @@ def load_image(img, maxsize=None, shape=None):
     return image.to(device, torch.float)
 
 def get_style_model_and_losses(cnn, mean, std, style_img, content_img):
+    '''Get model, style and content losses'''
     content_layers = ['conv_4']
     style_layers = ['conv_1', 'conv_2', 'conv_3', 'conv_4', 'conv_5']
 
@@ -114,7 +119,7 @@ def run_style_transfer(cnn, mean, std,content_img, style_img, input_img):
     print('Training...')
     style_weight = 1000000
     content_weight = 1
-    num_steps = 500
+    num_steps = 300
     model, style_losses, content_losses = get_style_model_and_losses(cnn, mean, std, style_img, content_img)
     optimizer = optim.LBFGS([input_img.requires_grad_()])
     iter = 0
@@ -150,30 +155,32 @@ def run_style_transfer(cnn, mean, std,content_img, style_img, input_img):
 
         optimizer.step(closure)
         
-    # a last correction...
     input_img.data.clamp_(0, 1)
 
     return input_img
 
 def NST(style_img, content_img):
-    # return {"image":"success"}
     content_img = load_image(content_img, maxsize=imsize)
     style_img = load_image(style_img,shape=(content_img.size(2), content_img.size(3)))
     
+    # load style and content images
     print(style_img.size(), content_img.size())
     assert style_img.size() == content_img.size(), "we need to import style and content images of the same size"
     input_img = content_img.clone()
     image = run_style_transfer(cnn, cnn_normalization_mean, cnn_normalization_std, content_img, style_img, input_img)
 
-    unloader = transforms.ToPILImage()  # reconvert into PIL image
+
+    unloader = transforms.ToPILImage()  # convert into PIL image
     image = image.cpu().clone()
-    image = image.squeeze(0)      # remove the fake batch dimension
+    image = image.squeeze(0)      # remove extra dimension
     image = unloader(image)
 
+    # decode image to base64 string
     buffered = BytesIO()
     image.save(buffered, format="JPEG")
     img_str = base64.b64encode(buffered.getvalue())
-        
+    
+    # create result json
     result = {}
     result["image"] = 'data:image/jpeg;base64,' + img_str.decode('utf-8')
     return result
